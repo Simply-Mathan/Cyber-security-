@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Web Security Lab -- Demo</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --accent:#7dd3fc; --muted:#9aa7b2;
+      --success:#10b981; --danger:#ef4444;
+    }
+    body{margin:0;font-family:Inter,Segoe UI,Helvetica,Arial;background:linear-gradient(180deg,#071021,#0b1220);color:#e6f0f6;}
+    .wrap{max-width:1000px;margin:32px auto;padding:24px;}
+    h1{margin:0 0 12px;font-weight:700}
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:16px;border-radius:12px;box-shadow:0 6px 24px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+    label{display:block;margin:10px 0 6px;font-size:13px;color:var(--muted)}
+    input[type=text],input[type=password],textarea,select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    button{padding:10px 12px;border-radius:8px;border:0;cursor:pointer;background:var(--accent);color:#022; font-weight:600}
+    small{color:var(--muted)}
+    .meter{height:10px;border-radius:6px;background:rgba(255,255,255,0.03);overflow:hidden;margin-top:8px}
+    .meter > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#ffecd2,#7dd3fc)}
+    pre{background:rgba(0,0,0,0.25);padding:10px;border-radius:8px;overflow:auto}
+    .bad{color:var(--danger)} .good{color:var(--success)}
+    .list{font-size:13px;color:var(--muted);margin:6px 0 0;padding-left:18px}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    footer{margin-top:20px;color:var(--muted);font-size:13px}
+    .muted{color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Web Security Lab -- Educational Demo</h1>
+    <p class="muted">Open this file in your browser. This lab shows safe examples and comparisons (vulnerable vs secure patterns) -- for learning only.</p>
+
+    <div class="grid" style="margin-top:16px">
+      <div>
+        <!-- Password Strength + Hashing -->
+        <div class="card" id="password-card">
+          <h2>Password Strength & Client-side Hash</h2>
+          <label for="pwd">Enter password</label>
+          <input id="pwd" type="password" placeholder="Type a test password" />
+          <div class="meter" aria-hidden><i id="pwd-bar"></i></div>
+          <div style="margin-top:8px">
+            <small id="pwd-score">Strength: --</small>
+            <button id="hash-btn" style="margin-left:12px">Hash (PBKDF2)</button>
+          </div>
+          <label for="salt">Salt (optional)</label>
+          <input id="salt" type="text" placeholder="Optional salt (random recommended)" />
+          <label for="hash-output">Derived key (hex)</label>
+          <pre id="hash-output">--</pre>
+          <small class="muted">Note: Hashing on the client is just educational. Always hash + salt on server using strong parameters (bcrypt, argon2) and TLS in transit.</small>
+        </div>
+
+        <!-- XSS Demo -->
+        <div class="card" style="margin-top:14px">
+          <h2>XSS Demo -- Vulnerable vs Safely Rendered</h2>
+          <label for="xss-input">Comment input (try &lt;script&gt;alert('xss')&lt;/script&gt;)</label>
+          <textarea id="xss-input" rows="3" placeholder="User-submitted text"></textarea>
+          <div style="margin-top:8px">
+            <button id="render-vuln">Render (VULNERABLE simulation)</button>
+            <button id="render-safe" style="margin-left:8px">Render (SAFE)</button>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <div style="flex:1">
+              <small>Vulnerable area (shows raw HTML -- do NOT do this on real sites):</small>
+              <div id="vuln-output" class="card" style="margin-top:6px;background:rgba(255,0,0,0.03);"></div>
+            </div>
+            <div style="flex:1">
+              <small>Safe area (uses textContent / sanitizer):</small>
+              <div id="safe-output" class="card" style="margin-top:6px;background:rgba(0,255,0,0.02);"></div>
+            </div>
+          </div>
+          <small class="muted">Lesson: never directly inject untrusted HTML. Use proper escaping, Content Security Policy (CSP), and server-side input validation.</small>
+        </div>
+
+        <!-- SQLi Demo -->
+        <div class="card" style="margin-top:14px">
+          <h2>SQL Injection -- Simulation</h2>
+          <label for="user">Enter username to "search"</label>
+          <input id="user" type="text" placeholder="e.g. alice" />
+          <div style="margin-top:8px">
+            <button id="btn-sqli">Simulate Vulnerable Query</button>
+            <button id="btn-param" style="margin-left:8px">Simulate Parameterized (safe)</button>
+          </div>
+          <label style="margin-top:10px">Server-side Query (simulated)</label>
+          <pre id="query-out">--</pre>
+          <small class="muted">This is a client-side simulation showing how string concatenation could create a dangerous query. In real servers: always use parameterized queries / ORM / prepared statements.</small>
+        </div>
+
+        <!-- CSRF Demo -->
+        <div class="card" style="margin-top:14px">
+          <h2>CSRF Token Demo</h2>
+          <p class="muted">This simulates a site issuing a CSRF token and checking it on form submit.</p>
+          <div class="two-col">
+            <div>
+              <label>Issued CSRF token</label>
+              <input id="csrf-issued" readonly />
+            </div>
+            <div>
+              <label>Form token (will be submitted)</label>
+              <input id="csrf-form" />
+            </div>
+          </div>
+          <div style="margin-top:10px">
+            <button id="issue-csrf">Issue Token</button>
+            <button id="submit-csrf" style="margin-left:8px">Submit Form</button>
+          </div>
+          <div style="margin-top:10px">
+            <pre id="csrf-result">--</pre>
+          </div>
+          <small class="muted">Server should tie CSRF token to user's session (cookie) and verify per-request. Use SameSite cookies and double-submit cookie/token patterns.</small>
+        </div>
+      </div>
+
+      <aside>
+        <div class="card">
+          <h3>Quick Security Checklist</h3>
+          <ul class="list">
+            <li>Use TLS (HTTPS) everywhere</li>
+            <li>Server-side validation + least privilege</li>
+            <li>Parameterized queries / prepared statements</li>
+            <li>Escape user content when rendering (no raw HTML)</li>
+            <li>Secure cookies (HttpOnly, Secure, SameSite)</li>
+            <li>Implement CSP & strong headers</li>
+          </ul>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>How to extend</h3>
+          <ol class="list">
+            <li>Convert to a two-tier app (Node/Express backend) to demo real hashing & DB queries.</li>
+            <li>Add CSP header example from the server side.</li>
+            <li>Integrate OWASP Juice Shop for deeper labs (in a contained environment).</li>
+          </ol>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>Files & Notes</h3>
+          <small class="muted">This is purely client-side for learning. Do not use any "vulnerable" patterns in production. Use secure server-side libraries for auth and storage.</small>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      <div>Created for educational purposes. Use responsibly.</div>
+    </footer>
+  </div>
+
+  <script>
+    // ---------- Password Strength (very basic) ----------
+    const pwd = document.getElementById('pwd');
+    const pwdBar = document.getElementById('pwd-bar');
+    const pwdScore = document.getElementById('pwd-score');
+
+    function strengthScore(p){
+      let s = 0;
+      if (!p) return 0;
+      if (p.length >= 8) s += 2;
+      if (p.length >= 12) s += 2;
+      if (/[a-z]/.test(p)) s++;
+      if (/[A-Z]/.test(p)) s++;
+      if (/[0-9]/.test(p)) s++;
+      if (/[^A-Za-z0-9]/.test(p)) s++;
+      return Math.min(s,8);
+    }
+    function updateMeter(){
+      const s = strengthScore(pwd.value);
+      const pct = Math.round((s/8)*100);
+      pwdBar.style.width = pct + '%';
+      let label = 'Very Weak';
+      let cls = 'bad';
+      if (s >= 6){ label='Strong'; cls='good'; }
+      else if (s >= 4){ label='Medium'; cls=''; }
+      pwdScore.innerHTML = `Strength: <span class="${cls}">${label} (${pct}%)</span>`;
+    }
+    pwd.addEventListener('input', updateMeter);
+
+    // ---------- PBKDF2 hashing (Web Crypto) ----------
+    const hashBtn = document.getElementById('hash-btn');
+    const hashOut = document.getElementById('hash-output');
+    const saltInput = document.getElementById('salt');
+
+    async function pbkdf2Hex(password, salt){
+      const enc = new TextEncoder();
+      const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveBits']);
+      const derived = await crypto.subtle.deriveBits({
+        name: 'PBKDF2',
+        salt: enc.encode(salt),
+        iterations: 150000,
+        hash: 'SHA-256'
+      }, baseKey, 256);
+      const arr = Array.from(new Uint8Array(derived));
+      return arr.map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    hashBtn.addEventListener('click', async () => {
+      const p = pwd.value || '';
+      const s = saltInput.value || Math.random().toString(36).slice(2,12);
+      hashOut.textContent = 'Working...';
+      try{
+        const hex = await pbkdf2Hex(p, s);
+        hashOut.textContent = `salt: ${s}\nkey: ${hex}`;
+      }catch(e){
+        hashOut.textContent = 'Error: ' + e.message;
+      }
+    });
+
+    // ---------- XSS Demo ----------
+    const xssInput = document.getElementById('xss-input');
+    const vulnOutput = document.getElementById('vuln-output');
+    const safeOutput = document.getElementById('safe-output');
+    document.getElementById('render-vuln').addEventListener('click', () => {
+      // Simulated vulnerable rendering (DO NOT use)
+      vulnOutput.innerHTML = '<strong>Posted:</strong> ' + xssInput.value;
+    });
+    document.getElementById('render-safe').addEventListener('click', () => {
+      // Proper safe rendering using textContent
+      safeOutput.textContent = 'Posted: ' + xssInput.value;
+    });
+
+    // ---------- SQLi Demo (client-side simulation only) ----------
+    const userIn = document.getElementById('user');
+    const queryOut = document.getElementById('query-out');
+    document.getElementById('btn-sqli').addEventListener('click', () => {
+      const u = userIn.value || '';
+      // vulnerable: string concatenation
+      const q = "SELECT * FROM users WHERE username = '" + u + "';";
+      queryOut.textContent = "VULNERABLE (concatenated):\n" + q + "\n\nIf user enters: ' OR '1'='1 --  this becomes a tautology.";
+    });
+    document.getElementById('btn-param').addEventListener('click', () => {
+      const u = userIn.value || '';
+      // parameterized simulation
+      const q = "SELECT * FROM users WHERE username = ?  -- params: [\"" + u + "\"]";
+      queryOut.textContent = "SAFE (parameterized):\n" + q + "\n\nThe user value does not change query structure when bound as a parameter.";
+    });
+
+    // ---------- CSRF Demo ----------
+    const csrfIssued = document.getElementById('csrf-issued');
+    const csrfForm = document.getElementById('csrf-form');
+    const csrfResult = document.getElementById('csrf-result');
+
+    let serverToken = null; // simulated server-side stored token (in session)
+    document.getElementById('issue-csrf').addEventListener('click', () => {
+      serverToken = crypto.getRandomValues(new Uint32Array(4)).join('-');
+      csrfIssued.value = serverToken;
+      csrfForm.value = ''; // user form field blank
+      csrfResult.textContent = 'Token issued and tied to session (simulated).';
+    });
+
+    document.getElementById('submit-csrf').addEventListener('click', () => {
+      const submitted = csrfForm.value;
+      if (serverToken && submitted === serverToken){
+        csrfResult.textContent = 'CSRF check PASSED -- form accepted.';
+      } else {
+        csrfResult.textContent = 'CSRF check FAILED -- possible CSRF attack blocked (simulation).';
+      }
+    });
+
+    // Initialize (small defaults)
+    updateMeter();
+  </script>
+</body>
+  </html>
