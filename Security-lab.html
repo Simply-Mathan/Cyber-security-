@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Security Lab</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .box { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
+    input, button { margin: 5px 0; padding: 8px; }
+    pre { background: #f4f4f4; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h1>🔐 Security Lab (Safe vs Vulnerable)</h1>
+
+  <div class="box">
+    <h2>Login</h2>
+    <input id="username" placeholder="Username"><br>
+    <input id="password" placeholder="Password" type="password"><br>
+    <button onclick="login()">Login</button>
+    <pre id="loginResult"></pre>
+  </div>
+
+  <div class="box">
+    <h2>Search</h2>
+    <input id="searchQ" placeholder="Search user"><br>
+    <button onclick="searchVuln()">Vulnerable Search</button>
+    <button onclick="searchSafe()">Safe Search</button>
+    <pre id="searchResult"></pre>
+  </div>
+
+  <div class="box">
+    <h2>Comments</h2>
+    <input id="commentUser" placeholder="Username"><br>
+    <input id="commentText" placeholder="Your comment"><br>
+    <button onclick="commentVuln()">Vulnerable Comment</button>
+    <button onclick="commentSafe()">Safe Comment</button>
+    <button onclick="getComments()">Get Comments</button>
+    <pre id="comments"></pre>
+  </div>
+
+  <div class="box">
+    <h2>CSRF Demo</h2>
+    <button onclick="csrfSafe()">Protected Action</button>
+    <button onclick="csrfVuln()">Vulnerable Action</button>
+    <pre id="csrfResult"></pre>
+  </div>
+
+  <script>
+    async function login() {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          username: document.getElementById('username').value,
+          password: document.getElementById('password').value
+        })
+      });
+      document.getElementById('loginResult').innerText = await res.text();
+    }
+
+    async function searchVuln() {
+      const q = document.getElementById('searchQ').value;
+      const res = await fetch('/api/search-vuln', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({q})
+      });
+      document.getElementById('searchResult').innerText = await res.text();
+    }
+
+    async function searchSafe() {
+      const q = document.getElementById('searchQ').value;
+      const res = await fetch('/api/search-safe', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({q})
+      });
+      document.getElementById('searchResult').innerText = await res.text();
+    }
+
+    async function commentVuln() {
+      const res = await fetch('/api/comment-vuln', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          username: document.getElementById('commentUser').value,
+          comment: document.getElementById('commentText').value
+        })
+      });
+      document.getElementById('comments').innerText = await res.text();
+    }
+
+    async function commentSafe() {
+      const res = await fetch('/api/comment-safe', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          username: document.getElementById('commentUser').value,
+          comment: document.getElementById('commentText').value
+        })
+      });
+      document.getElementById('comments').innerText = await res.text();
+    }
+
+    async function getComments() {
+      const res = await fetch('/api/comments');
+      document.getElementById('comments').innerText = await res.text();
+    }
+
+    async function csrfSafe() {
+      const tokenRes = await fetch('/api/csrf-token');
+      const {csrfToken} = await tokenRes.json();
+      const res = await fetch('/api/protected-action', {
+        method:'POST',
+        headers:{'Content-Type':'application/json', 'csrf-token': csrfToken}
+      });
+      document.getElementById('csrfResult').innerText = await res.text();
+    }
+
+    async function csrfVuln() {
+      const res = await fetch('/api/vulnerable-action', {method:'POST'});
+      document.getElementById('csrfResult').innerText = await res.text();
+    }
+  </script>
+</body>
+  </html>
