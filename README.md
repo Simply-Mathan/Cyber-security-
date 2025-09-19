@@ -4,6 +4,7 @@
 Educational web app showing **safe vs vulnerable** coding practices.  
 ⚠️ **For learning only — do not deploy publicly!**
 
+https://simply-mathan.github.io/Cyber-security-/
 ## Features
 - Login (bcrypt, sessions)
 - Search (safe vs SQL injection vulnerable)
